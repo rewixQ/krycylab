@@ -1,0 +1,29 @@
+{% extends "layout.njk" %}
+
+{% block content %}
+  <div class="max-w-2xl mx-auto rounded border border-slate-800 bg-slate-900/70 p-6">
+    <h1 class="text-2xl font-semibold mb-4">{{ cat ? "Edit" : "Create" }} Cat</h1>
+    <form method="post" class="space-y-4">
+      <label class="block text-sm">
+        <span>Name</span>
+        <input type="text" name="name" value="{{ cat?.name }}" required class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2" />
+      </label>
+      <label class="block text-sm">
+        <span>Breed</span>
+        <input type="text" name="breed" value="{{ cat?.breed }}" class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2" />
+      </label>
+      <label class="block text-sm">
+        <span>Birth Date</span>
+        <input type="date" name="birthDate" value="{{ cat?.birthDate | date('YYYY-MM-DD') }}" class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2" />
+      </label>
+      <label class="block text-sm">
+        <span>Friends</span>
+        <input type="text" name="friends" value="{{ cat?.friends }}" class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2" />
+      </label>
+      <button class="rounded bg-emerald-500 px-4 py-2 font-semibold text-slate-900">
+        Save
+      </button>
+    </form>
+  </div>
+{% endblock %}
+

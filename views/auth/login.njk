@@ -1,0 +1,21 @@
+{% extends "layout.njk" %}
+
+{% block content %}
+  <div class="max-w-md mx-auto rounded border border-slate-800 bg-slate-900/70 p-6">
+    <h1 class="text-xl font-semibold mb-4">Sign in</h1>
+    <form method="post" class="space-y-4">
+      <label class="block text-sm">
+        <span>Username</span>
+        <input type="text" name="username" required class="mt-1 w-full rounded bg-slate-950 border border-slate-800 px-3 py-2" />
+      </label>
+      <label class="block text-sm">
+        <span>Password</span>
+        <input type="password" name="password" required class="mt-1 w-full rounded bg-slate-950 border border-slate-800 px-3 py-2" />
+      </label>
+      <button class="w-full rounded bg-emerald-500 px-3 py-2 font-semibold text-slate-900">
+        Continue
+      </button>
+    </form>
+  </div>
+{% endblock %}
+

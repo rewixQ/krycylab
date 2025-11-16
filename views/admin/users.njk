@@ -1,0 +1,90 @@
+{% extends "layout.njk" %}
+
+{% block content %}
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-semibold">User Management</h1>
+    <a href="/admin/logs" class="text-sm text-emerald-300 hover:text-emerald-200">Audit logs</a>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-4 mb-6">
+    <div class="md:col-span-1 rounded border border-slate-800 bg-slate-900/70 p-4">
+      <h2 class="font-semibold mb-3">Create user</h2>
+      <form method="post" class="space-y-3">
+        <label class="block text-sm">
+          <span>Username</span>
+          <input name="username" required class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2" />
+        </label>
+        <label class="block text-sm">
+          <span>Email</span>
+          <input type="email" name="email" required class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2" />
+        </label>
+        <label class="block text-sm">
+          <span>Role</span>
+          <select name="roleId" class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2">
+            {% for role in roles %}
+              <option value="{{ role.roleId }}">{{ role.roleName }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="block text-sm">
+          <span>Temp password</span>
+          <input type="text" name="password" required class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2" />
+        </label>
+        <button class="w-full rounded bg-emerald-500 px-3 py-2 text-sm font-semibold text-slate-900">
+          Create user
+        </button>
+      </form>
+    </div>
+
+    <div class="md:col-span-2 rounded border border-slate-800">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-900 text-slate-400">
+          <tr>
+            <th class="px-3 py-2 text-left">Username</th>
+            <th class="px-3 py-2 text-left">Email</th>
+            <th class="px-3 py-2 text-left">Role</th>
+            <th class="px-3 py-2 text-left">Status</th>
+            <th class="px-3 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+            <tr class="border-t border-slate-900">
+              <td class="px-3 py-2">{{ user.username }}</td>
+              <td class="px-3 py-2 text-slate-400">{{ user.email }}</td>
+              <td class="px-3 py-2">
+                <form method="post" action="/admin/users/{{ user.id }}/role">
+                  <select name="roleId" class="rounded border border-slate-800 bg-slate-950 px-2 py-1 text-xs">
+                    {% for role in roles %}
+                      <option value="{{ role.roleId }}" {% if role.roleId == user.roleId %}selected{% endif %}>
+                        {{ role.roleName }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                  <button class="ml-2 text-emerald-300">Save</button>
+                </form>
+              </td>
+              <td class="px-3 py-2">
+                <form method="post" action="/admin/users/{{ user.id }}/state">
+                  {% if user.isActive %}
+                    <button name="state" value="deactivate" class="text-red-300">Deactivate</button>
+                  {% else %}
+                    <button name="state" value="activate" class="text-emerald-300">Activate</button>
+                  {% endif %}
+                </form>
+              </td>
+              <td class="px-3 py-2 text-right text-xs text-slate-500">
+                Created {{ user.createdAt | date("YYYY-MM-DD") }}
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="5" class="px-3 py-4 text-center text-slate-500">No users.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+

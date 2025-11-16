@@ -1,0 +1,64 @@
+{% extends "layout.njk" %}
+
+{% block content %}
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <p class="text-sm text-slate-500 uppercase tracking-widest">Cat</p>
+      <h1 class="text-3xl font-semibold">{{ cat.name }}</h1>
+    </div>
+    {% if currentUser.roleName in ["admin", "superadmin"] %}
+      <a href="/cats/{{ cat.id }}/edit" class="rounded border border-slate-700 px-3 py-2 text-sm">Edit</a>
+    {% endif %}
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded border border-slate-800 bg-slate-900/70 p-4 space-y-2">
+      <div>
+        <p class="text-xs text-slate-500 uppercase">Breed</p>
+        <p>{{ cat.breed or "Unknown" }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500 uppercase">Birth Date</p>
+        <p>{{ cat.birthDate ? (cat.birthDate | date("YYYY-MM-DD")) : "Unknown" }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500 uppercase">Friends</p>
+        <p>{{ cat.friends or "N/A" }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500 uppercase">Caretaker</p>
+        <p>{{ cat.caretaker?.username or "Unassigned" }}</p>
+      </div>
+    </div>
+
+    <div class="rounded border border-slate-800 bg-slate-900/70 p-4">
+      <h2 class="font-semibold mb-2">Assignments</h2>
+      <ul class="space-y-2 text-sm">
+        {% for assignment in cat.assignments %}
+          <li class="flex justify-between border-b border-slate-800 pb-1">
+            <span>{{ assignment.user.username }}</span>
+            <span class="text-slate-500">{{ assignment.assignedAt | date("YYYY-MM-DD") }}</span>
+          </li>
+        {% else %}
+          <li class="text-slate-500">No caretakers yet.</li>
+        {% endfor %}
+      </ul>
+      {% if caretakers and caretakers | length %}
+        <form method="post" action="/cats/{{ cat.id }}/assign" class="space-y-2 mt-4">
+          <label class="block text-sm">
+            <span>Assign caretaker</span>
+            <select name="userId" class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2">
+              {% for caretaker in caretakers %}
+                <option value="{{ caretaker.id }}">{{ caretaker.username }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <button class="rounded bg-emerald-500 px-3 py-2 text-sm font-semibold text-slate-900">
+            Assign
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+

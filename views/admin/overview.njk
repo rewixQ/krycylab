@@ -1,0 +1,27 @@
+{% extends "layout.njk" %}
+
+{% block content %}
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <p class="text-xs uppercase text-slate-500">Admin</p>
+      <h1 class="text-2xl font-semibold">Overview</h1>
+    </div>
+    <a href="/admin/users" class="text-sm text-emerald-300 hover:text-emerald-200">Manage users</a>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-4">
+    <div class="rounded border border-slate-800 bg-slate-900/70 p-4">
+      <p class="text-sm text-slate-400">Users</p>
+      <p class="text-3xl font-bold">{{ metrics.users }}</p>
+    </div>
+    <div class="rounded border border-slate-800 bg-slate-900/70 p-4">
+      <p class="text-sm text-slate-400">Cats</p>
+      <p class="text-3xl font-bold">{{ metrics.cats }}</p>
+    </div>
+    <div class="rounded border border-slate-800 bg-slate-900/70 p-4">
+      <p class="text-sm text-slate-400">Assignments</p>
+      <p class="text-3xl font-bold">{{ metrics.assignments }}</p>
+    </div>
+  </div>
+{% endblock %}
+

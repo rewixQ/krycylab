@@ -1,0 +1,49 @@
+{% extends "layout.njk" %}
+
+{% block content %}
+  <div class="space-y-6">
+    <div class="rounded border border-slate-800 bg-slate-900/70 p-6">
+      <h1 class="text-2xl font-semibold mb-2">Security</h1>
+      <p class="text-sm text-slate-400 mb-4">
+        Manage MFA and trusted devices.
+      </p>
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-slate-400">Multi-factor authentication</p>
+          <p class="font-semibold">{{ hasMfa ? "Enabled" : "Disabled" }}</p>
+        </div>
+        {% if hasMfa %}
+          <form method="post" action="/account/security/mfa/disable">
+            <button class="text-sm rounded border border-red-400 px-3 py-2 text-red-200">
+              Disable MFA
+            </button>
+          </form>
+        {% else %}
+          <a href="/mfa/setup" class="rounded bg-emerald-500 px-3 py-2 text-sm font-semibold text-slate-900">
+            Enable MFA
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="rounded border border-slate-800 bg-slate-900/70 p-6">
+      <h2 class="text-xl font-semibold mb-3">Trusted devices</h2>
+      <div class="space-y-3">
+        {% for device in devices %}
+          <div class="flex items-center justify-between rounded border border-slate-800 px-3 py-2 text-sm">
+            <div>
+              <p>{{ device.deviceName or "Device #" ~ device.id }}</p>
+              <p class="text-slate-500 text-xs">Registered {{ device.registeredAt | date("YYYY-MM-DD HH:mm") }}</p>
+            </div>
+            <form method="post" action="/account/security/devices/{{ device.id }}/revoke">
+              <button class="text-red-300 hover:text-red-200">Revoke</button>
+            </form>
+          </div>
+        {% else %}
+          <p class="text-slate-500 text-sm">No trusted devices yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

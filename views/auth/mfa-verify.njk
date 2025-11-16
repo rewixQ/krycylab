@@ -1,0 +1,24 @@
+{% extends "layout.njk" %}
+
+{% block content %}
+  <div class="max-w-md mx-auto rounded border border-slate-800 bg-slate-900/70 p-6">
+    <h1 class="text-xl font-semibold mb-4">Verify MFA</h1>
+    <p class="text-sm text-slate-400 mb-4">
+      Enter the 6-digit code from your authenticator app.
+    </p>
+    <form method="post" class="space-y-4">
+      <label class="block text-sm">
+        <span>Code</span>
+        <input type="text" name="code" maxlength="6" inputmode="numeric" required class="mt-1 w-full rounded bg-slate-950 border border-slate-800 px-3 py-2 tracking-widest text-center text-xl" />
+      </label>
+      <label class="flex items-center space-x-2 text-sm">
+        <input type="checkbox" name="remember" class="rounded border-slate-700 bg-slate-950" />
+        <span>Remember this device</span>
+      </label>
+      <button class="w-full rounded bg-emerald-500 px-3 py-2 font-semibold text-slate-900">
+        Verify
+      </button>
+    </form>
+  </div>
+{% endblock %}
+

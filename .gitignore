@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.*
+pnpm-debug.log
+prisma/dev.db
+.sessions
+.idea
+.DS_Store
+public/assets/tailwind.css
+

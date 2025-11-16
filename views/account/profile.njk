@@ -1,0 +1,29 @@
+{% extends "layout.njk" %}
+
+{% block content %}
+  <div class="max-w-2xl mx-auto space-y-6">
+    <div class="rounded border border-slate-800 bg-slate-900/70 p-6">
+      <h1 class="text-2xl font-semibold mb-2">Profile</h1>
+      <form method="post" class="space-y-4">
+        <div>
+          <p class="text-xs text-slate-500 uppercase">Username</p>
+          <p class="font-mono">{{ user.username }}</p>
+        </div>
+        <label class="block text-sm">
+          <span>Email</span>
+          <input type="email" name="email" value="{{ user.email }}"
+            class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2" />
+        </label>
+        <button class="rounded bg-emerald-500 px-4 py-2 font-semibold text-slate-900">
+          Update profile
+        </button>
+      </form>
+    </div>
+    <div class="rounded border border-slate-800 bg-slate-900/70 p-4 flex flex-col gap-2 text-sm">
+      <p>Password changed: {{ user.passwordChangedAt ? (user.passwordChangedAt | date("YYYY-MM-DD")) : "Never" }}</p>
+      <a href="/account/password" class="text-emerald-300 hover:text-emerald-200">Change password</a>
+      <a href="/account/security" class="text-emerald-300 hover:text-emerald-200">Security settings</a>
+    </div>
+  </div>
+{% endblock %}
+

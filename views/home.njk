@@ -1,0 +1,38 @@
+{% extends "layout.njk" %}
+
+{% block content %}
+  {% if currentUser %}
+    <h1 class="text-2xl font-semibold mb-4">Welcome back, {{ currentUser.username }}</h1>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="rounded border border-slate-800 bg-slate-900/60 p-4">
+        <p class="text-sm text-slate-400">Active assignments</p>
+        <p class="text-3xl font-bold mt-2">{{ totalAssignments }}</p>
+      </div>
+      <div class="rounded border border-slate-800 bg-slate-900/60 p-4">
+        <p class="text-sm text-slate-400">Recent cats updated</p>
+        <ul class="mt-3 space-y-2">
+          {% for cat in recentCats %}
+            <li class="flex justify-between text-sm">
+              <span>{{ cat.name }}</span>
+              <span class="text-slate-500">{{ cat.updatedAt | date("YYYY-MM-DD") }}</span>
+            </li>
+          {% else %}
+            <li class="text-slate-500">No activity yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  {% else %}
+    <section class="text-center py-16">
+      <h1 class="text-4xl font-bold mb-4">Secure Cat Management</h1>
+      <p class="text-slate-400 mb-6">
+        Track every cat with strict roles, MFA, and audit trails.
+      </p>
+      <a href="/login"
+        class="inline-flex items-center rounded bg-emerald-500 px-4 py-2 font-semibold text-slate-900">
+        Sign in to continue
+      </a>
+    </section>
+  {% endif %}
+{% endblock %}
+
