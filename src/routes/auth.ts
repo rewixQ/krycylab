@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
 import passport from "passport";
 import { v4 as uuid } from "uuid";
+import qrcode from "qrcode";
 import { addFlash } from "../lib/flash";
 import {
   createUserSession,
@@ -48,13 +49,18 @@ router.post("/login", (req: Request, res: Response, next: NextFunction) => {
         const isTrusted = await isTrustedDevice(user.id, trustedToken);
         const clientIp = req.ip ?? req.socket.remoteAddress ?? "unknown";
         const userAgent = req.get("user-agent") ?? undefined;
-        if (isTrusted) {
-          req.session.mfaVerified = true;
-          req.session.requiresMfa = false;
-        }
 
+        // Set session flags based on user data from passport
+        req.session.pendingPasswordReset = user.needsPasswordReset;
+        req.session.mfaVerified = !user.hasMfa;
+        req.session.mfaUserId = user.hasMfa ? user.id : undefined;
+        req.session.requiresMfa = user.hasMfa;
+        req.session.mustSetupMfa = !user.hasMfa;
+
+
+        // MFA setup is mandatory - takes precedence over trusted devices
         if (req.session.mustSetupMfa) {
-          req.session.mfaVerified = true;
+          req.session.mfaVerified = true; // Allow access to setup page
           await createUserSession(user.id, req.sessionID, {
             ip: clientIp,
             userAgent,
@@ -62,6 +68,12 @@ router.post("/login", (req: Request, res: Response, next: NextFunction) => {
           });
           addFlash(req, "info", "Setup MFA to complete onboarding.");
           return res.redirect("/mfa/setup");
+        }
+
+        // Check trusted device status only if MFA is already set up
+        if (isTrusted && !req.session.mustSetupMfa) {
+          req.session.mfaVerified = true;
+          req.session.requiresMfa = false;
         }
 
         if (!req.session.mfaVerified) {
@@ -107,24 +119,53 @@ router.post("/logout", requireAuth, async (req: Request, res: Response, next: Ne
   }
 });
 
-router.get("/mfa/setup", requireAuth, (req: Request, res: Response) => {
+router.get("/mfa/setup", requireAuth, async (req: Request, res: Response) => {
   if (!req.session.mustSetupMfa) {
     return res.redirect("/account/security");
   }
 
-  const secret = generateMfaSecret(req.user!.username);
-  req.session.mfaTempSecret = secret.base32;
+  // Only generate a new secret if one doesn't exist
+  let secret;
+  if (!req.session.mfaTempSecret) {
+    secret = generateMfaSecret(req.user!.username);
+    req.session.mfaTempSecret = secret.base32;
+  } else {
+    // Reconstruct secret from stored base32 for display
+    secret = {
+      base32: req.session.mfaTempSecret,
+      otpauth_url: `otpauth://totp/Cat%20Management%20(${encodeURIComponent(req.user!.username)})?secret=${req.session.mfaTempSecret}`
+    };
+  }
+
+  // Generate QR code
+  let qrCodeDataUrl = "";
+  try {
+    if (secret.otpauth_url) {
+      qrCodeDataUrl = await qrcode.toDataURL(secret.otpauth_url);
+    }
+  } catch (error) {
+    console.error("Failed to generate QR code:", error);
+  }
 
   res.render("auth/mfa-setup", {
-    title: "Set up MFA",
+    title: "Set up Multi-Factor Authentication",
     otpauthUrl: secret.otpauth_url,
-    base32: secret.base32
+    base32: secret.base32,
+    qrCodeDataUrl
   });
 });
 
 router.post("/mfa/setup", requireAuth, async (req: Request, res: Response) => {
   const code = req.body.code?.trim();
   const secret = req.session.mfaTempSecret;
+
+  console.log('MFA Setup POST:', {
+    hasSecret: !!secret,
+    hasCode: !!code,
+    mustSetupMfa: req.session.mustSetupMfa,
+    mfaVerified: req.session.mfaVerified,
+    requiresMfa: req.session.requiresMfa
+  });
 
   if (!secret) {
     addFlash(req, "error", "Generate a new MFA secret and try again.");
@@ -140,9 +181,12 @@ router.post("/mfa/setup", requireAuth, async (req: Request, res: Response) => {
     req.session.mfaTempSecret = undefined;
     req.session.mustSetupMfa = false;
     req.session.mfaVerified = true;
+    req.session.requiresMfa = false;
+    console.log('MFA Setup Success - Session flags updated');
     addFlash(req, "success", "MFA enabled successfully.");
     res.redirect("/cats");
   } catch (error) {
+    console.log('MFA Setup Error:', error);
     addFlash(
       req,
       "error",

@@ -60,6 +60,17 @@ app.set("views", viewsPath);
 
 app.use(helmet());
 app.use(cookieParser());
+
+// Static files must come before HTTPS enforcement
+app.use(
+  express.static(path.join(process.cwd(), "public"), {
+    maxAge: isDev ? 0 : "7d",
+    setHeaders: (res) => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+    }
+  })
+);
+
 app.use(enforceHttps);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -73,14 +84,6 @@ app.use(sessionActivityTracker);
 
 app.use(attachLocals);
 app.use(mfaEnforcer);
-app.use(
-  express.static(path.join(process.cwd(), "public"), {
-    maxAge: isDev ? 0 : "7d",
-    setHeaders: (res) => {
-      res.setHeader("X-Content-Type-Options", "nosniff");
-    }
-  })
-);
 
 app.use("/", homeRouter);
 app.use("/", authRouter);

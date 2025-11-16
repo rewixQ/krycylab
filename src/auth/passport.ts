@@ -10,9 +10,13 @@ type PassportUser = {
   id: number;
   username: string;
   roleName: string;
+  needsPasswordReset: boolean;
+  hasMfa: boolean;
 };
 
 export const configurePassport = (passport: PassportStatic) => {
+  const passportUserMap = new Map<number, PassportUser>();
+
   passport.use(
     new LocalStrategy(
       {
@@ -33,17 +37,15 @@ export const configurePassport = (passport: PassportStatic) => {
             return done(null, false, { message: result.message });
           }
 
-          req.session.pendingPasswordReset = result.needsPasswordReset;
-          req.session.mfaVerified = !result.hasMfa;
-          req.session.mfaUserId = result.hasMfa ? result.user.id : undefined;
-          req.session.requiresMfa = result.hasMfa;
-          req.session.mustSetupMfa = !result.hasMfa;
-
-          return done(null, {
+          const passportUser: PassportUser = {
             id: result.user.id,
             username: result.user.username,
-            roleName: result.user.role?.roleName ?? "caretaker"
-          });
+            roleName: result.user.role?.roleName ?? "caretaker",
+            needsPasswordReset: result.needsPasswordReset,
+            hasMfa: result.hasMfa
+          };
+          passportUserMap.set(result.user.id, passportUser);
+          return done(null, passportUser);
         } catch (error) {
           return done(error as Error);
         }
@@ -56,21 +58,30 @@ export const configurePassport = (passport: PassportStatic) => {
   });
 
   passport.deserializeUser(async (id: number, done) => {
+    const cached = passportUserMap.get(id);
+    if (cached) {
+      return done(null, cached);
+    }
+
     try {
       const user = await prisma.user.findUnique({
         where: { id },
-        include: { role: true }
+        include: { role: true, mfaTokens: { where: { isActive: true } } }
       });
 
       if (!user) {
         return done(null, false);
       }
 
-      return done(null, {
+      const passportUser: PassportUser = {
         id: user.id,
         username: user.username,
-        roleName: user.role?.roleName ?? "caretaker"
-      });
+        roleName: user.role?.roleName ?? "caretaker",
+        needsPasswordReset: false,
+        hasMfa: user.mfaTokens.length > 0
+      };
+      passportUserMap.set(user.id, passportUser);
+      return done(null, passportUser);
     } catch (error) {
       done(error as Error);
     }

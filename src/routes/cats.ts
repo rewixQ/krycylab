@@ -35,9 +35,9 @@ router.post("/", adminOnly, async (req: Request, res: Response, next: NextFuncti
     await createCat(
       {
         name: payload.name,
-        breed: payload.breed || undefined,
-        friends: payload.friends || undefined,
-        birthDate: payload.birthDate ? new Date(payload.birthDate) : undefined
+        breed: payload.breed || null,
+        friends: payload.friends || null,
+        birthDate: payload.birthDate ? new Date(payload.birthDate) : null
       },
       req.user!.id
     );
@@ -106,9 +106,9 @@ router.post("/:id", adminOnly, async (req: Request, res: Response, next: NextFun
       catId,
       {
         name: payload.name,
-        breed: payload.breed || undefined,
-        friends: payload.friends || undefined,
-        birthDate: payload.birthDate ? new Date(payload.birthDate) : undefined
+        breed: payload.breed || null,
+        friends: payload.friends || null,
+        birthDate: payload.birthDate ? new Date(payload.birthDate) : null
       },
       req.user!.id
     );

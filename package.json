@@ -5,6 +5,7 @@
   "main": "dist/src/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:full": "concurrently \"pnpm dev\" \"pnpm tailwind\"",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/server.js",
     "lint": "tsc --noEmit",
@@ -13,6 +14,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "seed": "tsx prisma/seed.ts",
     "tailwind": "tailwindcss -i ./src/styles/tailwind.css -o ./public/assets/tailwind.css --watch",
+    "tailwind:build": "tailwindcss -i ./src/styles/tailwind.css -o ./public/assets/tailwind.css",
     "test": "echo \"No automated tests configured\" && exit 0"
   },
   "keywords": [],
@@ -37,6 +39,7 @@
     "pg": "^8.16.3",
     "postcss": "^8.5.6",
     "prisma": "^6.19.0",
+    "qrcode": "^1.5.4",
     "session-file-store": "^1.5.0",
     "speakeasy": "^2.0.0",
     "tailwindcss": "^3.4.18",
@@ -53,9 +56,11 @@
     "@types/nunjucks": "^3.2.6",
     "@types/passport": "^1.0.17",
     "@types/passport-local": "^1.0.38",
+    "@types/qrcode": "^1.5.6",
     "@types/session-file-store": "^1.2.6",
     "@types/speakeasy": "^2.0.10",
     "@types/uuid": "^11.0.0",
+    "concurrently": "^9.2.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"

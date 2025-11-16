@@ -2,24 +2,32 @@
 
 {% block content %}
   <div class="max-w-lg mx-auto rounded border border-slate-800 bg-slate-900/70 p-6 space-y-4">
-    <h1 class="text-xl font-semibold">Set up MFA</h1>
-    <p class="text-sm text-slate-400">
-      Scan the QR code / use the secret key in Google Authenticator, then enter the 6-digit code.
-    </p>
-    <div class="rounded bg-slate-950 border border-slate-800 p-4">
-      <p class="text-xs uppercase tracking-widest text-slate-500">Secret</p>
-      <p class="font-mono select-all">{{ base32 }}</p>
+    <h1 class="text-xl font-semibold">Set up Multi-Factor Authentication</h1>
+    <div class="rounded bg-amber-950/50 border border-amber-800/50 p-3">
+      <p class="text-sm text-amber-200">
+        <strong>Security Requirement:</strong> Multi-factor authentication is required for all accounts.
+        Please set up MFA to continue using the application.
+      </p>
     </div>
-    {% if otpauthUrl %}
-      <p class="text-xs text-slate-500 break-all">{{ otpauthUrl }}</p>
+    <p class="text-sm text-slate-400">
+      Scan the QR code with Google Authenticator or enter the secret key manually, then enter the 6-digit code below.
+    </p>
+    {% if qrCodeDataUrl %}
+      <div class="flex justify-center">
+        <img src="{{ qrCodeDataUrl }}" alt="MFA QR Code" class="rounded border border-slate-700" />
+      </div>
     {% endif %}
+    <div class="rounded bg-slate-950 border border-slate-800 p-4">
+      <p class="text-xs uppercase tracking-widest text-slate-500 mb-2">Secret Key (if QR code doesn't work)</p>
+      <p class="font-mono select-all break-all text-sm">{{ base32 }}</p>
+    </div>
     <form method="post" class="space-y-4">
       <label class="block text-sm">
         <span>Verification code</span>
         <input type="text" name="code" maxlength="6" required class="mt-1 w-full rounded bg-slate-950 border border-slate-800 px-3 py-2 text-center text-xl tracking-widest" />
       </label>
       <button class="w-full rounded bg-emerald-500 px-3 py-2 font-semibold text-slate-900">
-        Enable MFA
+        Enable Multi-Factor Authentication
       </button>
     </form>
   </div>

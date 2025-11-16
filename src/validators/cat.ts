@@ -1,27 +1,26 @@
 import { z } from "zod";
 
-const optionalString = z
-  .preprocess((value) =>
-    typeof value === "string" ? value.trim() : undefined
-  )
-  .optional()
-  .refine((val) => !val || val.length <= 128, {
-    message: "Value is too long."
-  });
-
 export const catSchema = z.object({
   name: z
     .string()
     .trim()
     .min(2, "Name must be at least 2 characters.")
     .max(64, "Name is too long."),
-  breed: optionalString,
-  friends: optionalString,
+  breed: z
+    .string()
+    .trim()
+    .max(64, "Breed is too long.")
+    .optional()
+    .or(z.literal("")),
+  friends: z
+    .string()
+    .trim()
+    .max(128, "Friends description is too long.")
+    .optional()
+    .or(z.literal("")),
   birthDate: z
-    .preprocess((value) => {
-      if (typeof value !== "string" || !value.trim()) return undefined;
-      return value.trim();
-    }, z.string().optional())
+    .string()
+    .optional()
     .refine(
       (val) => !val || !Number.isNaN(Date.parse(val)),
       "Birth date must be a valid date."

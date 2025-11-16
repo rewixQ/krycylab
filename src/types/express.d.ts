@@ -19,6 +19,8 @@ declare global {
       id: number;
       username: string;
       roleName: string;
+      needsPasswordReset: boolean;
+      hasMfa: boolean;
     }
   }
 }

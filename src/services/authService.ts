@@ -44,6 +44,7 @@ export const verifyCredentials = async (
     }
   });
 
+
   if (!user || user.isDeleted) {
     await recordLoginAttempt({
       username,
@@ -80,6 +81,7 @@ export const verifyCredentials = async (
 
   const needsReset = passwordNeedsReset(user);
   const hasMfa = user.mfaTokens.length > 0;
+
 
   await logAudit({
     userId: user.id,
