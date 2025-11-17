@@ -110,7 +110,6 @@ router.post("/logout", requireAuth, async (req: Request, res: Response, next: Ne
     }
     req.logout(() => {
       req.session.destroy(() => {
-        res.clearCookie("trusted_device");
         res.redirect("/login");
       });
     });
@@ -228,8 +227,10 @@ router.post("/mfa/verify", requireAuth, async (req: Request, res: Response) => {
     req.session.requiresMfa = false;
     req.session.mfaUserId = undefined;
 
+    let trustedToken: string | undefined;
     if (remember) {
       const deviceToken = uuid();
+      trustedToken = deviceToken;
       await rememberDevice(userId, deviceToken, req.get("user-agent") ?? undefined);
       res.cookie("trusted_device", deviceToken, {
         httpOnly: true,
@@ -237,13 +238,15 @@ router.post("/mfa/verify", requireAuth, async (req: Request, res: Response) => {
         secure: !isDev,
         maxAge: 1000 * 60 * 60 * 24 * 30
       });
+      addFlash(req, "info", "This device will be remembered for future logins.");
     }
 
     const clientIp = req.ip ?? req.socket.remoteAddress ?? "unknown";
     const userAgent = req.get("user-agent") ?? undefined;
     await createUserSession(userId, req.sessionID, {
       ip: clientIp,
-      userAgent
+      userAgent,
+      deviceFingerprint: trustedToken
     });
 
     if (req.session.pendingPasswordReset) {

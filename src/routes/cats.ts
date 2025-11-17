@@ -1,5 +1,8 @@
 import { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
+import path from "path";
+import multer from "multer";
+import { v4 as uuidv4 } from "uuid";
 import { requireAuth, requireMfa, requireRole } from "../middleware/authGuards";
 import {
   assignCaretaker,
@@ -13,6 +16,32 @@ import { prisma } from "../lib/prisma";
 import { parseCatPayload } from "../validators/cat";
 
 const router = Router();
+
+const uploadDir = path.join(process.cwd(), "public", "uploads", "cats");
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${uuidv4()}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) {
+      return cb(new Error("Only image files are allowed."));
+    }
+    cb(null, true);
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB
+  }
+});
+
 const adminOnly = [requireAuth, requireMfa, requireRole("admin")];
 const caretakers = [requireAuth, requireMfa];
 
@@ -29,15 +58,17 @@ router.get("/new", adminOnly, (_req: Request, res: Response) => {
   res.render("cats/form", { title: "Add Cat", cat: null });
 });
 
-router.post("/", adminOnly, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/", adminOnly, upload.single("photo"), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payload = parseCatPayload(req.body);
+    const photoPath = req.file ? path.posix.join("uploads", "cats", req.file.filename) : null;
     await createCat(
       {
         name: payload.name,
         breed: payload.breed || null,
         friends: payload.friends || null,
-        birthDate: payload.birthDate ? new Date(payload.birthDate) : null
+        birthDate: payload.birthDate ? new Date(payload.birthDate) : null,
+        photoPath
       },
       req.user!.id
     );
@@ -94,7 +125,7 @@ router.get("/:id/edit", adminOnly, async (req: Request, res: Response, next: Nex
   }
 });
 
-router.post("/:id", adminOnly, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/:id", adminOnly, upload.single("photo"), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const catId = Number(req.params.id);
     if (Number.isNaN(catId)) {
@@ -102,13 +133,15 @@ router.post("/:id", adminOnly, async (req: Request, res: Response, next: NextFun
       return res.redirect("/cats");
     }
     const payload = parseCatPayload(req.body);
+    const photoPath = req.file ? path.posix.join("uploads", "cats", req.file.filename) : undefined;
     await updateCat(
       catId,
       {
         name: payload.name,
         breed: payload.breed || null,
         friends: payload.friends || null,
-        birthDate: payload.birthDate ? new Date(payload.birthDate) : null
+        birthDate: payload.birthDate ? new Date(payload.birthDate) : null,
+        ...(photoPath !== undefined ? { photoPath } : {})
       },
       req.user!.id
     );

@@ -10,7 +10,13 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-slate-400">Multi-factor authentication</p>
-          <p class="font-semibold">{{ hasMfa ? "Enabled" : "Disabled" }}</p>
+          <p class="font-semibold">
+            {% if hasMfa %}
+              Enabled
+            {% else %}
+              Disabled
+            {% endif %}
+          </p>
         </div>
         {% if hasMfa %}
           <form method="post" action="/account/security/mfa/disable">

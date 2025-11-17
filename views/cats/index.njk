@@ -19,27 +19,37 @@
     <table class="min-w-full text-sm">
       <thead class="bg-slate-900 text-slate-400">
         <tr>
+          <th class="w-12 px-3 py-2 text-left">Photo</th>
           <th class="px-3 py-2 text-left">Name</th>
           <th class="px-3 py-2 text-left">Breed</th>
           <th class="px-3 py-2 text-left">Caretaker</th>
           <th class="px-3 py-2 text-left">Updated</th>
-          <th class="px-3 py-2"></th>
+          <th class="px-3 py-2 w-16"></th>
         </tr>
       </thead>
       <tbody>
         {% for cat in cats %}
-          <tr class="border-t border-slate-900">
-            <td class="px-3 py-2">{{ cat.name }}</td>
+          <tr class="border-t border-slate-900 hover:bg-slate-800/50 transition-colors">
+            <td class="px-3 py-2">
+              {% if cat.photoPath %}
+                <img src="/{{ cat.photoPath }}" alt="{{ cat.name }} photo" class="w-12 h-12 rounded-full object-cover bg-slate-700 border border-slate-700 hover:border-emerald-500 transition-colors" />
+              {% else %}
+                <div class="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center border border-slate-700">
+                  <span class="text-slate-500 text-xs">🐱</span>
+                </div>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2 font-medium">{{ cat.name }}</td>
             <td class="px-3 py-2 text-slate-400">{{ cat.breed or "—" }}</td>
             <td class="px-3 py-2 text-slate-400">{{ cat.caretaker?.username or "Unassigned" }}</td>
             <td class="px-3 py-2 text-slate-500">{{ cat.updatedAt | date("YYYY-MM-DD") }}</td>
             <td class="px-3 py-2 text-right">
-              <a href="/cats/{{ cat.id }}" class="text-emerald-300 hover:text-emerald-200">View</a>
+              <a href="/cats/{{ cat.id }}" class="text-emerald-300 hover:text-emerald-200 font-medium">View</a>
             </td>
           </tr>
         {% else %}
           <tr>
-            <td class="px-3 py-4 text-center text-slate-500" colspan="5">No cats found.</td>
+            <td class="px-3 py-4 text-center text-slate-500" colspan="6">No cats found.</td>
           </tr>
         {% endfor %}
       </tbody>

@@ -147,6 +147,7 @@ model Cat {
   friends     String?
   caretakerId Int?      @map("caretaker_id")
   updatedAt   DateTime  @default(now()) @map("updated_at")
+  photoPath   String?   @map("photo_path")
 
   caretaker User? @relation("CaretakerCats", fields: [caretakerId], references: [id])
   assignments CaretakerAssignment[]
