@@ -21,6 +21,11 @@ async function checkMFA() {
       username: u.username,
       activeMfaTokens: u.mfaTokens.length
     })));
+
+    const sessions = await prisma.userSession.findMany({
+      include: { user: { select: { username: true } } }
+    });
+    console.log('User Sessions:', sessions);
   } catch (error) {
     console.error('Error:', error);
   } finally {

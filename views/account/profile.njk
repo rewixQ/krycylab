@@ -20,7 +20,7 @@
       </form>
     </div>
     <div class="rounded border border-slate-800 bg-slate-900/70 p-4 flex flex-col gap-2 text-sm">
-      <p>Password changed: {{ user.passwordChangedAt ? (user.passwordChangedAt | date("YYYY-MM-DD")) : "Never" }}</p>
+      <p>Password changed: {{ user.passwordChangedAt | date("YYYY-MM-DD") if user.passwordChangedAt else "Never" }}</p>
       <a href="/account/password" class="text-emerald-300 hover:text-emerald-200">Change password</a>
       <a href="/account/security" class="text-emerald-300 hover:text-emerald-200">Security settings</a>
     </div>

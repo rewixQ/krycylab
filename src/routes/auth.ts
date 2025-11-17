@@ -197,7 +197,7 @@ router.post("/mfa/setup", requireAuth, async (req: Request, res: Response) => {
 });
 
 router.get("/mfa/verify", requireAuth, (req: Request, res: Response) => {
-  if (!req.session.requiresMfa) {
+  if (req.session.requiresMfa === false) {
     return res.redirect("/cats");
   }
   res.render("auth/mfa-verify", { title: "Verify MFA" });

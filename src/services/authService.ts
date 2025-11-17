@@ -148,8 +148,19 @@ export const createUserSession = async (
   token: string,
   meta: RequestMeta
 ) => {
-  await prisma.userSession.create({
-    data: {
+  await prisma.userSession.upsert({
+    where: { token },
+    update: {
+      userId,
+      ipAddress: meta.ip,
+      deviceFingerprint: meta.deviceFingerprint,
+      tlsVersion: meta.tlsVersion,
+      cipherSuite: meta.cipherSuite,
+      certificateSignature: meta.certificateSignature,
+      lastActiveAt: new Date(),
+      isActive: true
+    },
+    create: {
       userId,
       token,
       ipAddress: meta.ip,
