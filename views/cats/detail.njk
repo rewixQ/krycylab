@@ -19,7 +19,7 @@
       </div>
       <div>
         <p class="text-xs text-slate-500 uppercase">Birth Date</p>
-        <p>{{ cat.birthDate ? (cat.birthDate | date("YYYY-MM-DD")) : "Unknown" }}</p>
+        <p>{% if cat.birthDate %}{{ cat.birthDate | date("YYYY-MM-DD") }}{% else %}Unknown{% endif %}</p>
       </div>
       <div>
         <p class="text-xs text-slate-500 uppercase">Friends</p>
