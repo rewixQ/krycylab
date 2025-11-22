@@ -10,15 +10,22 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
       return res.render("home", { title: "Cat Management" });
     }
 
-    const [recentCats, totalAssignments] = await Promise.all([
-      prisma.cat.findMany({
-        orderBy: { updatedAt: "desc" },
-        take: 5
+    const [recentCatsRaw, totalAssignments] = await Promise.all([
+      (prisma as any).cats.findMany({
+        orderBy: { updated_at: "desc" },
+        take: 5,
+        select: { cat_id: true, name: true, updated_at: true }
       }),
-      prisma.caretakerAssignment.count({
-        where: { userId: req.user!.id }
+      (prisma as any).caretakerassignments.count({
+        where: { user_id: req.user!.id, unassigned_at: null }
       })
     ]);
+
+    const recentCats = (recentCatsRaw as any[]).map((c) => ({
+      id: c.cat_id,
+      name: c.name,
+      updatedAt: c.updated_at
+    }));
 
     res.render("home", {
       title: "Dashboard",

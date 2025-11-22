@@ -5,21 +5,21 @@ const prisma = new PrismaClient();
 
 async function main() {
   const roles = [
-    { roleName: "superadmin", description: "Top-level administrator" },
-    { roleName: "admin", description: "Administrator" },
-    { roleName: "caretaker", description: "Cat caretaker" }
+    { role_name: "superadmin", description: "Top-level administrator" },
+    { role_name: "admin", description: "Administrator" },
+    { role_name: "caretaker", description: "Cat caretaker" }
   ];
 
   for (const role of roles) {
-    await prisma.role.upsert({
-      where: { roleName: role.roleName },
+    await (prisma as any).roles.upsert({
+      where: { role_name: role.role_name },
       update: {},
       create: role
     });
   }
 
-  const superRole = await prisma.role.findUnique({
-    where: { roleName: "superadmin" }
+  const superRole = await (prisma as any).roles.findUnique({
+    where: { role_name: "superadmin" }
   });
 
   if (!superRole) {
@@ -30,20 +30,19 @@ async function main() {
     process.env.SUPERADMIN_PASSWORD?.trim() || "ChangeMe123!";
   const hashedPassword = await bcrypt.hash(password, 12);
 
-  await prisma.user.upsert({
+  await (prisma as any).users.upsert({
     where: { username: "admin" },
     update: {
-      password: hashedPassword,
-      roleId: superRole.roleId,
-      isDeleted: false,
-      isActive: true
+      password_hash: hashedPassword,
+      role_id: superRole.role_id,
+      is_active: true
     },
     create: {
       username: "admin",
       email: process.env.SUPERADMIN_EMAIL?.trim() || "admin@example.com",
-      password: hashedPassword,
-      roleId: superRole.roleId,
-      passwordChangedAt: new Date()
+      password_hash: hashedPassword,
+      role_id: superRole.role_id,
+      last_password_change: new Date()
     }
   });
 

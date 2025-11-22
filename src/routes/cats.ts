@@ -92,13 +92,14 @@ router.get("/:id", caretakers, async (req: Request, res: Response, next: NextFun
     }
     let caretakersOptions: Array<{ id: number; username: string }> = [];
     if (["admin", "superadmin"].includes(req.user!.roleName)) {
-      caretakersOptions = await prisma.user.findMany({
-        where: {
-          isDeleted: false,
-          role: { is: { roleName: "caretaker" } }
-        },
-        select: { id: true, username: true }
+      const caretakers = await (prisma as any).users.findMany({
+        where: { roles: { role_name: "caretaker" } },
+        select: { user_id: true, username: true }
       });
+      caretakersOptions = caretakers.map((u: any) => ({
+        id: u.user_id,
+        username: u.username
+      }));
     }
     res.render("cats/detail", {
       title: cat.name,
@@ -159,15 +160,12 @@ router.post("/:id/assign", adminOnly, async (req: Request, res: Response, next: 
       addFlash(req, "error", "Invalid cat id.");
       return res.redirect("/cats");
     }
-    const caretakersList = await prisma.user.findMany({
-      where: {
-        isDeleted: false,
-        role: { is: { roleName: "caretaker" } }
-      },
-      select: { id: true }
+    const caretakersList = await (prisma as any).users.findMany({
+      where: { roles: { role_name: "caretaker" } },
+      select: { user_id: true }
     });
 
-    const caretakerIds = caretakersList.map((c) => c.id);
+    const caretakerIds = caretakersList.map((c: any) => c.user_id);
     const targetId = Number(req.body.userId);
 
     if (!caretakerIds.includes(targetId)) {

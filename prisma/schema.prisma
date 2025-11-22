@@ -3,169 +3,214 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("POSTGRES_DATABASE_URL")
 }
 
-/// Switch to PostgreSQL by replacing the datasource above with the block below.
-// datasource db {
-//   provider = "postgresql"
-//   url      = env("DATABASE_URL")
-// }
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model auditlogs {
+  log_id             BigInt           @id @default(autoincrement())
+  user_id            Int?
+  session_id         Int?
+  operation          String           @db.VarChar(32)
+  table_name         audit_table_enum
+  record_id          Int?
+  timestamp          DateTime?        @default(now()) @db.Timestamp(6)
+  severity           String?          @default("INFO") @db.VarChar(32)
+  ip_address         String?          @db.Inet
+  user_agent         String?          @db.VarChar(255)
+  device_fingerprint String?          @db.VarChar(255)
+  tls_version        String?          @db.VarChar(10)
+  success_flag       Boolean?         @default(true)
+  request_method     String?          @db.VarChar(10)
+  request_url        String?
+  error_message      String?
+  changes            Json?
+  old_values         Json?
+  affected_records   Int?
+  geoip_location     String?          @db.VarChar(255)
+  request_headers    Json?
+  usersessions       usersessions?    @relation(fields: [session_id], references: [session_id], onUpdate: NoAction)
+  users              users?           @relation(fields: [user_id], references: [user_id], onUpdate: NoAction)
 
-model User {
-  id                  Int                 @id @default(autoincrement()) @map("user_id")
-  username            String              @unique
-  email               String              @unique
-  password            String
-  isActive            Boolean             @default(true) @map("is_active")
-  isDeleted           Boolean             @default(false) @map("is_deleted")
-  passwordChangedAt   DateTime?           @map("password_changed_at")
-  passwordExpiry      DateTime?           @map("password_expiry")
-  accountLockedUntil  DateTime?           @map("account_locked_until")
-  createdAt           DateTime            @default(now()) @map("created_at")
-  updatedAt           DateTime            @updatedAt @map("updated_at")
-  roleId              Int?                @map("role_id")
-
-  role                Role?               @relation(fields: [roleId], references: [roleId])
-  sessions            UserSession[]
-  loginAttempts       LoginAttempt[]
-  passwordHistory     PasswordHistory[]
-  trustedDevices      TrustedDevice[]
-  mfaTokens           MFAToken[]
-  auditLogs           AuditLog[]
-  caretakerCats       Cat[]               @relation("CaretakerCats")
-  caretakerAssignments CaretakerAssignment[]
-
-  @@map("Users")
-  @@index([username], map: "idx_username")
+  @@index([ip_address], map: "idx_audit_ip_address")
+  @@index([operation], map: "idx_audit_operation")
+  @@index([severity, timestamp], map: "idx_audit_severity_timestamp")
+  @@index([table_name, timestamp], map: "idx_audit_table_timestamp")
+  @@index([timestamp, user_id, severity], map: "idx_audit_timestamp_user")
+  @@index([user_id], map: "idx_audit_user_id")
 }
 
-model UserSession {
-  id                   Int       @id @default(autoincrement()) @map("session_id")
-  userId               Int       @map("user_id")
-  token                String    @unique
-  ipAddress            String    @map("ip_address")
-  deviceFingerprint    String?   @map("device_fingerprint")
-  tlsVersion           String?   @map("tls_version")
-  cipherSuite          String?   @map("cipher_suite")
-  certificateSignature String?   @map("certificate_signature")
-  createdAt            DateTime  @default(now()) @map("created_at")
-  lastActiveAt         DateTime  @default(now()) @map("last_active_at")
-  isActive             Boolean   @default(true) @map("is_active")
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model caretakerassignments {
+  assignment_id Int       @id @default(autoincrement())
+  user_id       Int
+  cat_id        Int
+  assigned_at   DateTime? @default(now()) @db.Timestamp(6)
+  unassigned_at DateTime? @db.Timestamp(6)
+  cats          cats      @relation(fields: [cat_id], references: [cat_id], onDelete: Cascade, onUpdate: NoAction)
+  users         users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
-  user User @relation(fields: [userId], references: [id])
-
-  @@map("UserSessions")
+  @@index([cat_id, assigned_at], map: "idx_caretaker_cat_assigned")
+  @@index([user_id, unassigned_at], map: "idx_caretaker_user_unassigned")
 }
 
-model LoginAttempt {
-  id         Int       @id @default(autoincrement()) @map("attempt_id")
-  userId     Int?      @map("user_id")
-  ipAddress  String    @map("ip_address")
-  username   String?
-  success    Boolean   @default(false)
-  attemptedAt DateTime @default(now()) @map("attempted_at")
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model cats {
+  cat_id               Int                    @id @default(autoincrement())
+  name                 String                 @db.VarChar(64)
+  breed                String?                @db.VarChar(64)
+  birth_date           DateTime               @db.Date
+  description          String?                @db.VarChar(2048)
+  filename             String?                @db.VarChar(255)
+  created_at           DateTime?              @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamp(6)
+  caretakerassignments caretakerassignments[]
 
-  user User? @relation(fields: [userId], references: [id])
-
-  @@map("LoginAttempts")
+  @@index([birth_date], map: "idx_cats_birth_date")
+  @@index([created_at(sort: Desc)], map: "idx_cats_created_at")
 }
 
-model PasswordHistory {
-  id        Int      @id @default(autoincrement()) @map("history_id")
-  userId    Int      @map("user_id")
-  oldPassword String @map("old_password")
-  changedAt DateTime @default(now()) @map("changed_at")
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model loginattempts {
+  attempt_id   Int       @id @default(autoincrement())
+  username     String    @db.VarChar(64)
+  ip_address   String    @db.Inet
+  success      Boolean?  @default(false)
+  reason       String?   @db.VarChar(255)
+  attempted_at DateTime? @default(now()) @db.Timestamp(6)
 
-  user User @relation(fields: [userId], references: [id])
-
-  @@map("PasswordHistory")
+  @@index([ip_address, attempted_at(sort: Desc)], map: "idx_login_ip_time")
+  @@index([username, attempted_at(sort: Desc)], map: "idx_login_username_time")
 }
 
-model TrustedDevice {
-  id                Int      @id @default(autoincrement()) @map("device_id")
-  userId            Int      @map("user_id")
-  deviceFingerprint String   @map("device_fingerprint")
-  deviceName        String?  @map("device_name")
-  isActive          Boolean  @default(true) @map("is_active")
-  registeredAt      DateTime @default(now()) @map("registered_at")
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model mfatokens {
+  token_id         Int           @id @default(autoincrement())
+  user_id          Int
+  token_type       mfa_type_enum
+  token_value      Bytes
+  token_iv         Bytes?
+  key_version      Int           @default(1)
+  created_at       DateTime?     @default(now()) @db.Timestamp(6)
+  last_used_at     DateTime?     @db.Timestamp(6)
+  is_active        Boolean?      @default(true)
+  revoked_at       DateTime?     @db.Timestamp(6)
+  failed_attempts  Int?          @default(0)
+  mfa_locked_until DateTime?     @db.Timestamp(6)
+  users            users         @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
-  user User @relation(fields: [userId], references: [id])
-
-  @@unique([userId, deviceFingerprint])
-  @@map("TrustedDevices")
+  @@index([is_active, revoked_at], map: "idx_mfa_active_revoked")
+  @@index([user_id, is_active], map: "idx_mfa_user_active")
 }
 
-model MFAToken {
-  id         Int      @id @default(autoincrement()) @map("token_id")
-  userId     Int      @map("user_id")
-  tokenType  String   @map("token_type")
-  tokenValue String   @map("token_value")
-  createdAt  DateTime @default(now()) @map("created_at")
-  lastUsedAt DateTime? @map("last_used_at")
-  isActive   Boolean  @default(true) @map("is_active")
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model passwordhistory {
+  history_id        Int       @id @default(autoincrement())
+  user_id           Int
+  old_password_hash String    @db.VarChar(255)
+  changed_at        DateTime? @default(now()) @db.Timestamp(6)
+  users             users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
-  user User @relation(fields: [userId], references: [id])
-
-  @@map("MFATokens")
+  @@index([user_id, changed_at(sort: Desc)], map: "idx_password_history_user")
 }
 
-model Role {
-  roleId      Int     @id @default(autoincrement()) @map("role_id")
-  roleName    String  @unique @map("role_name")
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model roles {
+  role_id     Int       @id @default(autoincrement())
+  role_name   String    @unique @db.VarChar(32)
   description String?
-
-  users User[]
-
-  @@map("Roles")
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  users       users[]
 }
 
-model AuditLog {
-  id          Int      @id @default(autoincrement()) @map("log_id")
-  userId      Int?     @map("user_id")
-  operation   String   @map("operation")
-  tableName   String?  @map("table_name")
-  rowId       Int?     @map("row_id")
-  eventType   String?  @map("event_type")
-  createdAt   DateTime @default(now()) @map("created_at")
-  success     Boolean  @default(true)
-  errorMessage String? @map("error_message")
-  changes     String?
-  extra       String?
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model trusteddevices {
+  device_id             Int       @id @default(autoincrement())
+  user_id               Int
+  device_fingerprint    Bytes
+  device_fingerprint_iv Bytes?
+  device_name           String?   @db.VarChar(255)
+  ip_address            String?   @db.Inet
+  first_seen            DateTime? @default(now()) @db.Timestamp(6)
+  last_seen             DateTime? @default(now()) @db.Timestamp(6)
+  is_trusted            Boolean?  @default(false)
+  revoked_at            DateTime? @db.Timestamp(6)
+  trust_expires_at      DateTime? @default(dbgenerated("(now() + '90 days'::interval)")) @db.Timestamp(6)
+  users                 users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
-  user User? @relation(fields: [userId], references: [id])
-
-  @@map("AuditLogs")
+  @@unique([user_id, device_fingerprint], map: "unique_device_per_user")
+  @@index([is_trusted, revoked_at, trust_expires_at], map: "idx_trusted_devices_status")
+  @@index([user_id, device_fingerprint], map: "idx_trusted_devices_user")
 }
 
-model Cat {
-  id          Int       @id @default(autoincrement()) @map("cat_id")
-  name        String
-  breed       String?
-  birthDate   DateTime? @map("birth_date")
-  friends     String?
-  caretakerId Int?      @map("caretaker_id")
-  updatedAt   DateTime  @default(now()) @map("updated_at")
-  photoPath   String?   @map("photo_path")
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users {
+  user_id                  Int                    @id @default(autoincrement())
+  username                 String                 @unique(map: "idx_users_username") @db.VarChar(64)
+  email                    String                 @unique(map: "idx_users_email") @db.VarChar(255)
+  password_hash            String                 @db.VarChar(255)
+  role_id                  Int
+  is_active                Boolean?               @default(true)
+  last_password_change     DateTime?              @db.Timestamp(6)
+  password_expires_at      DateTime?              @db.Timestamp(6)
+  account_locked_until     DateTime?              @db.Timestamp(6)
+  password_change_required Boolean?               @default(false)
+  created_at               DateTime?              @default(now()) @db.Timestamp(6)
+  updated_at               DateTime?              @default(now()) @db.Timestamp(6)
+  auditlogs                auditlogs[]
+  caretakerassignments     caretakerassignments[]
+  mfatokens                mfatokens[]
+  passwordhistory          passwordhistory[]
+  trusteddevices           trusteddevices[]
+  roles                    roles                  @relation(fields: [role_id], references: [role_id], onDelete: NoAction, onUpdate: NoAction)
+  usersessions             usersessions[]
 
-  caretaker User? @relation("CaretakerCats", fields: [caretakerId], references: [id])
-  assignments CaretakerAssignment[]
-
-  @@map("Cats")
+  @@index([role_id, is_active], map: "idx_users_role_active")
 }
 
-model CaretakerAssignment {
-  id          Int      @id @default(autoincrement()) @map("assignment_id")
-  userId      Int      @map("user_id")
-  catId       Int      @map("cat_id")
-  assignedAt  DateTime @default(now()) @map("assigned_at")
-  unassignedAt DateTime? @map("unassigned_at")
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model usersessions {
+  session_id              Int         @id @default(autoincrement())
+  user_id                 Int
+  session_token_hash      String      @unique @db.VarChar(255)
+  session_token_iv        Bytes?
+  ip_address              String      @db.Inet
+  user_agent              String?     @db.VarChar(255)
+  device_fingerprint      Bytes?
+  tls_version             String?     @db.VarChar(10)
+  tls_cipher_suite        String?     @db.VarChar(255)
+  certificate_fingerprint String?     @db.VarChar(255)
+  created_at              DateTime?   @default(now()) @db.Timestamp(6)
+  last_activity           DateTime?   @default(now()) @db.Timestamp(6)
+  expires_at              DateTime    @db.Timestamp(6)
+  is_active               Boolean?    @default(true)
+  auditlogs               auditlogs[]
+  users                   users       @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
-  user User @relation(fields: [userId], references: [id])
-  cat  Cat  @relation(fields: [catId], references: [id])
-
-  @@unique([userId, catId])
-  @@map("CaretakerAssignments")
+  @@index([is_active, expires_at], map: "idx_sessions_active_expires")
+  @@index([session_token_hash], map: "idx_sessions_token_hash")
+  @@index([user_id, expires_at], map: "idx_sessions_user_expires")
 }
 
+enum audit_table_enum {
+  Users
+  Roles
+  Cats
+  CaretakerAssignments
+  UserSessions
+  LoginAttempts
+  PasswordHistory
+  TrustedDevices
+  MFATokens
+}
+
+enum mfa_type_enum {
+  TOTP
+  U2F
+  BACKUP_CODE
+}

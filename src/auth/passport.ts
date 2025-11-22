@@ -38,13 +38,13 @@ export const configurePassport = (passport: PassportStatic) => {
           }
 
           const passportUser: PassportUser = {
-            id: result.user.id,
+            id: result.user.user_id,
             username: result.user.username,
-            roleName: result.user.role?.roleName ?? "caretaker",
+            roleName: result.user.roles?.role_name ?? "caretaker",
             needsPasswordReset: result.needsPasswordReset,
             hasMfa: result.hasMfa
           };
-          passportUserMap.set(result.user.id, passportUser);
+          passportUserMap.set(result.user.user_id, passportUser);
           return done(null, passportUser);
         } catch (error) {
           return done(error as Error);
@@ -64,9 +64,9 @@ export const configurePassport = (passport: PassportStatic) => {
     }
 
     try {
-      const user = await prisma.user.findUnique({
-        where: { id },
-        include: { role: true, mfaTokens: { where: { isActive: true } } }
+      const user = await (prisma as any).users.findUnique({
+        where: { user_id: id },
+        include: { roles: true, mfatokens: { where: { is_active: true } } }
       });
 
       if (!user) {
@@ -74,13 +74,13 @@ export const configurePassport = (passport: PassportStatic) => {
       }
 
       const passportUser: PassportUser = {
-        id: user.id,
+        id: user.user_id,
         username: user.username,
-        roleName: user.role?.roleName ?? "caretaker",
+        roleName: user.roles?.role_name ?? "caretaker",
         needsPasswordReset: false,
-        hasMfa: user.mfaTokens.length > 0
+        hasMfa: user.mfatokens.length > 0
       };
-      passportUserMap.set(user.id, passportUser);
+      passportUserMap.set(user.user_id, passportUser);
       return done(null, passportUser);
     } catch (error) {
       done(error as Error);

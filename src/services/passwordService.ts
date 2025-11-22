@@ -27,31 +27,31 @@ export const validatePasswordStrength = (password: string) => {
 };
 
 export const passwordNeedsReset = (user: {
-  passwordChangedAt: Date | null;
-  passwordExpiry: Date | null;
+  last_password_change: Date | null;
+  password_expires_at: Date | null;
 }) => {
-  if (!user.passwordChangedAt) return true;
-  if (user.passwordExpiry && user.passwordExpiry < new Date()) return true;
+  if (!user.last_password_change) return true;
+  if (user.password_expires_at && user.password_expires_at < new Date()) return true;
   return false;
 };
 
-export const updatePassword = async (userId: number, newPassword: string) => {
-  const existing = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { password: true }
+export const updatePassword = async (user_id: number, newPassword: string) => {
+  const existing = await prisma.users.findUnique({
+    where: { user_id },
+    select: { password_hash: true, is_active: true }
   });
 
-  if (!existing) {
-    throw new Error("User not found");
+  if (!existing || !existing.is_active) {
+    throw new Error("User not found or inactive");
   }
 
-  const recentPasswords = await prisma.passwordHistory.findMany({
-    where: { userId },
-    orderBy: { changedAt: "desc" },
+  const recentPasswords = await prisma.passwordhistory.findMany({
+    where: { user_id },
+    orderBy: { changed_at: "desc" },
     take: 5
   });
 
-  const reuseChecks = [existing.password, ...recentPasswords.map((p) => p.oldPassword)];
+  const reuseChecks = [existing.password_hash, ...recentPasswords.map((p) => p.old_password_hash)];
 
   for (const hash of reuseChecks) {
     const matches = await bcrypt.compare(newPassword, hash);
@@ -64,15 +64,16 @@ export const updatePassword = async (userId: number, newPassword: string) => {
   const expiry = dayjs().add(PASSWORD_EXPIRY_DAYS, "day").toDate();
 
   await prisma.$transaction([
-    prisma.passwordHistory.create({
-      data: { userId, oldPassword: existing.password }
+    prisma.passwordhistory.create({
+      data: { user_id, old_password_hash: existing.password_hash }
     }),
-    prisma.user.update({
-      where: { id: userId },
+    prisma.users.update({
+      where: { user_id },
       data: {
-        password: hashedPassword,
-        passwordChangedAt: new Date(),
-        passwordExpiry: expiry
+        password_hash: hashedPassword,
+        last_password_change: new Date(),
+        password_expires_at: expiry,
+        password_change_required: false
       }
     })
   ]);

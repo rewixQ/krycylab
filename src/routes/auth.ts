@@ -132,7 +132,9 @@ router.get("/mfa/setup", requireAuth, async (req: Request, res: Response) => {
     // Reconstruct secret from stored base32 for display
     secret = {
       base32: req.session.mfaTempSecret,
-      otpauth_url: `otpauth://totp/Cat%20Management%20(${encodeURIComponent(req.user!.username)})?secret=${req.session.mfaTempSecret}`
+      otpauth_url: `otpauth://totp/Cat%20Management%20(${encodeURIComponent(
+        req.user!.username
+      )})?secret=${req.session.mfaTempSecret}&issuer=${encodeURIComponent("Cat Management")}&algorithm=SHA1&digits=6&period=30`
     };
   }
 
@@ -199,6 +201,12 @@ router.get("/mfa/verify", requireAuth, (req: Request, res: Response) => {
   if (req.session.requiresMfa === false) {
     return res.redirect("/cats");
   }
+  console.log("[MFA] GET /mfa/verify", {
+    userId: req.user?.id,
+    requiresMfa: req.session.requiresMfa,
+    mfaVerified: req.session.mfaVerified,
+    mustSetupMfa: req.session.mustSetupMfa
+  });
   res.render("auth/mfa-verify", { title: "Verify MFA" });
 });
 
@@ -206,6 +214,12 @@ router.post("/mfa/verify", requireAuth, async (req: Request, res: Response) => {
   const code = req.body.code?.trim();
   const remember = req.body.remember === "on";
   const userId = req.session.mfaUserId ?? req.user?.id;
+
+  console.log("[MFA] POST /mfa/verify start", {
+    userId,
+    codeLength: code?.length ?? 0,
+    remember
+  });
 
   if (!userId) {
     addFlash(req, "error", "Something went wrong. Please login again.");
@@ -219,10 +233,12 @@ router.post("/mfa/verify", requireAuth, async (req: Request, res: Response) => {
   try {
     const verified = await verifyMfaCode(userId, code);
     if (!verified) {
+      console.warn("[MFA] POST /mfa/verify invalid code");
       addFlash(req, "error", "Invalid code, try again.");
       return res.redirect("/mfa/verify");
     }
 
+    console.log("[MFA] POST /mfa/verify success", { userId, remember });
     req.session.mfaVerified = true;
     req.session.requiresMfa = false;
     req.session.mfaUserId = undefined;
@@ -257,6 +273,7 @@ router.post("/mfa/verify", requireAuth, async (req: Request, res: Response) => {
     addFlash(req, "success", "Authentication complete.");
     res.redirect("/cats");
   } catch (error) {
+    console.error("[MFA] POST /mfa/verify error", error);
     addFlash(
       req,
       "error",

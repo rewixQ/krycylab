@@ -17,10 +17,21 @@ export const router = Router();
 
 router.get("/", guards, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.id },
-      include: { role: true }
+    const dbUser = await (prisma as any).users.findUnique({
+      where: { user_id: req.user!.id },
+      select: {
+        username: true,
+        email: true,
+        last_password_change: true
+      }
     });
+    const user = dbUser
+      ? {
+          username: dbUser.username,
+          email: dbUser.email,
+          passwordChangedAt: dbUser.last_password_change
+        }
+      : null;
     res.render("account/profile", { title: "My Account", user });
   } catch (error) {
     next(error);
@@ -30,8 +41,8 @@ router.get("/", guards, async (req: Request, res: Response, next: NextFunction) 
 router.post("/", guards, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.body;
-    await prisma.user.update({
-      where: { id: req.user!.id },
+    await (prisma as any).users.update({
+      where: { user_id: req.user!.id },
       data: { email }
     });
     addFlash(req, "success", "Profile updated.");
@@ -61,22 +72,23 @@ router.post("/password", guards, async (req: Request, res: Response) => {
     return res.redirect("/account/password");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: req.user!.id }
+  const user = await (prisma as any).users.findUnique({
+    where: { user_id: req.user!.id },
+    select: { password_hash: true }
   });
   if (!user) {
     addFlash(req, "error", "User not found.");
     return res.redirect("/login");
   }
 
-  const matches = await bcrypt.compare(currentPassword, user.password);
+  const matches = await bcrypt.compare(currentPassword, user.password_hash);
   if (!matches) {
     addFlash(req, "error", "Current password is incorrect.");
     return res.redirect("/account/password");
   }
 
   try {
-    await updatePassword(user.id, newPassword);
+    await updatePassword(req.user!.id, newPassword);
     req.session.pendingPasswordReset = false;
     addFlash(req, "success", "Password updated.");
     res.redirect("/account");
@@ -92,15 +104,26 @@ router.post("/password", guards, async (req: Request, res: Response) => {
 
 router.get("/security", guards, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const [mfaToken, devices] = await Promise.all([
-      prisma.mFAToken.findFirst({
-        where: { userId: req.user!.id, isActive: true }
+    const [mfaToken, devicesRaw] = await Promise.all([
+      (prisma as any).mfatokens.findFirst({
+        where: { user_id: req.user!.id, is_active: true }
       }),
-      prisma.trustedDevice.findMany({
-        where: { userId: req.user!.id, isActive: true },
-        orderBy: { registeredAt: "desc" }
+      (prisma as any).trusteddevices.findMany({
+        where: { user_id: req.user!.id, is_trusted: true, revoked_at: null },
+        orderBy: { first_seen: "desc" },
+        select: {
+          device_id: true,
+          device_name: true,
+          first_seen: true
+        }
       })
     ]);
+
+    const devices = (devicesRaw as any[]).map((d) => ({
+      id: d.device_id,
+      deviceName: d.device_name,
+      registeredAt: d.first_seen
+    }));
 
     res.render("account/security", {
       title: "Security",

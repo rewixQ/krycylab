@@ -7,11 +7,13 @@ const hashToken = (token: string) =>
 export const isTrustedDevice = async (userId: number, token?: string) => {
   if (!token) return false;
   const fingerprint = hashToken(token);
-  const device = await prisma.trustedDevice.findFirst({
+  const device = await (prisma as any).trusteddevices.findFirst({
     where: {
-      userId,
-      deviceFingerprint: fingerprint,
-      isActive: true
+      user_id: userId,
+      device_fingerprint: Buffer.from(fingerprint, "utf-8"),
+      is_trusted: true,
+      revoked_at: null,
+      trust_expires_at: { gt: new Date() }
     }
   });
   return Boolean(device);
@@ -23,35 +25,35 @@ export const rememberDevice = async (
   deviceName?: string
 ) => {
   const fingerprint = hashToken(token);
-  await prisma.trustedDevice.upsert({
+  await (prisma as any).trusteddevices.upsert({
     where: {
-      userId_deviceFingerprint: {
-        userId,
-        deviceFingerprint: fingerprint
+      user_id_device_fingerprint: {
+        user_id: userId,
+        device_fingerprint: Buffer.from(fingerprint, "utf-8")
       }
     },
-    update: { isActive: true, deviceName },
+    update: { is_trusted: true, device_name: deviceName, revoked_at: null, last_seen: new Date() },
     create: {
-      userId,
-      deviceFingerprint: fingerprint,
-      deviceName,
-      isActive: true
+      user_id: userId,
+      device_fingerprint: Buffer.from(fingerprint, "utf-8"),
+      device_name: deviceName,
+      is_trusted: true
     }
   });
 };
 
 export const revokeDevice = async (userId: number, fingerprintToken: string) => {
   const fingerprint = hashToken(fingerprintToken);
-  await prisma.trustedDevice.updateMany({
-    where: { userId, deviceFingerprint: fingerprint },
-    data: { isActive: false }
+  await (prisma as any).trusteddevices.updateMany({
+    where: { user_id: userId, device_fingerprint: Buffer.from(fingerprint, "utf-8") },
+    data: { is_trusted: false, revoked_at: new Date() }
   });
 };
 
 export const disableDeviceById = async (userId: number, deviceId: number) => {
-  await prisma.trustedDevice.updateMany({
-    where: { userId, id: deviceId },
-    data: { isActive: false }
+  await (prisma as any).trusteddevices.updateMany({
+    where: { user_id: userId, device_id: deviceId },
+    data: { is_trusted: false, revoked_at: new Date() }
   });
 };
 

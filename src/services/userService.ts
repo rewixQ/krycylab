@@ -6,23 +6,23 @@ import { hasRequiredRole, RoleName } from "../lib/roles";
 import { validatePasswordStrength } from "./passwordService";
 
 export const listUsers = () => {
-  return prisma.user.findMany({
-    where: { isDeleted: false },
+  return (prisma as any).users.findMany({
+    where: { is_active: true },
     include: {
-      role: true
+      roles: true
     },
-    orderBy: { createdAt: "desc" }
+    orderBy: { created_at: "desc" }
   });
 };
 
 export const getUserById = (id: number) => {
-  return prisma.user.findUnique({
-    where: { id },
-    include: { role: true }
+  return (prisma as any).users.findUnique({
+    where: { user_id: id },
+    include: { roles: true }
   });
 };
 
-export const listRoles = () => prisma.role.findMany();
+export const listRoles = () => (prisma as any).roles.findMany();
 
 export const createUser = async (
   data: {
@@ -39,21 +39,21 @@ export const createUser = async (
   }
 
   const passwordHash = await bcrypt.hash(data.password, 12);
-  const user = await prisma.user.create({
+  const user = await (prisma as any).users.create({
     data: {
       username: data.username,
       email: data.email,
-      password: passwordHash,
-      roleId: data.roleId
+      password_hash: passwordHash,
+      role_id: data.roleId
     }
   });
 
   await logAudit({
-    userId: actorId,
+    user_id: actorId,
     operation: "CREATE",
-    tableName: "Users",
-    rowId: user.id,
-    eventType: "users.create"
+    table_name: "Users",
+    record_id: user.user_id,
+    event_type: "users.create"
   });
 
   return user;
@@ -65,18 +65,18 @@ export const updateUserRole = async (
   actor: { id: number; roleName: RoleName }
 ) => {
   await ensureRoleChangeAllowed(actor.roleName, targetId);
-  const updated = await prisma.user.update({
-    where: { id: targetId },
-    data: { roleId }
+  const updated = await (prisma as any).users.update({
+    where: { user_id: targetId },
+    data: { role_id: roleId }
   });
 
   await logAudit({
-    userId: actor.id,
+    user_id: actor.id,
     operation: "UPDATE",
-    tableName: "Users",
-    rowId: targetId,
-    eventType: "users.role.update",
-    changes: { roleId }
+    table_name: "Users",
+    record_id: targetId,
+    event_type: "users.role.update",
+    changes: { role_id: roleId }
   });
 
   return updated;
@@ -88,17 +88,17 @@ export const setUserActiveState = async (
   actor: { id: number; roleName: RoleName }
 ) => {
   await ensureRoleChangeAllowed(actor.roleName, targetId);
-  const updated = await prisma.user.update({
-    where: { id: targetId },
-    data: { isActive: active }
+  const updated = await (prisma as any).users.update({
+    where: { user_id: targetId },
+    data: { is_active: active }
   });
 
   await logAudit({
-    userId: actor.id,
+    user_id: actor.id,
     operation: active ? "ENABLE" : "DISABLE",
-    tableName: "Users",
-    rowId: targetId,
-    eventType: active ? "users.enable" : "users.disable"
+    table_name: "Users",
+    record_id: targetId,
+    event_type: active ? "users.enable" : "users.disable"
   });
 
   return updated;
@@ -108,13 +108,13 @@ const ensureRoleChangeAllowed = async (
   actorRole: RoleName,
   targetUserId: number
 ) => {
-  const target = await prisma.user.findUnique({
-    where: { id: targetUserId },
-    include: { role: true }
+  const target = await (prisma as any).users.findUnique({
+    where: { user_id: targetUserId },
+    include: { roles: true }
   });
   if (!target) throw new Error("User not found");
 
-  const targetRole = (target.role?.roleName ?? "caretaker") as RoleName;
+  const targetRole = (target.roles?.role_name ?? "caretaker") as RoleName;
   if (!hasRequiredRole(actorRole, targetRole) || actorRole === targetRole) {
     throw new Error("Insufficient privileges for this action.");
   }

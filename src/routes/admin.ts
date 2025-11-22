@@ -19,9 +19,9 @@ const adminGuards = [requireAuth, requireMfa, requireRole("admin")];
 router.get("/", adminGuards, async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const [users, cats, assignments] = await Promise.all([
-      prisma.user.count({ where: { isDeleted: false } }),
-      prisma.cat.count(),
-      prisma.caretakerAssignment.count()
+      (prisma as any).users.count({ where: { is_active: true } }),
+      (prisma as any).cats.count(),
+      (prisma as any).caretakerassignments.count()
     ]);
     res.render("admin/overview", {
       title: "Admin Dashboard",
@@ -108,10 +108,10 @@ router.get(
   [requireAuth, requireMfa, requireRole("superadmin")],
   async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const logs = await prisma.auditLog.findMany({
-        orderBy: { createdAt: "desc" },
+      const logs = await (prisma as any).auditlogs.findMany({
+        orderBy: { timestamp: "desc" },
         take: 100,
-        include: { user: { select: { username: true } } }
+        include: { users: { select: { username: true } } }
       });
       res.render("admin/logs", { title: "Audit Logs", logs });
     } catch (error) {
