@@ -9,7 +9,8 @@ import {
   createCat,
   getCat,
   listCats,
-  updateCat
+  updateCat,
+  deleteCat
 } from "../services/catService";
 import { addFlash } from "../lib/flash";
 import { prisma } from "../lib/prisma";
@@ -176,6 +177,27 @@ router.post("/:id/assign", adminOnly, async (req: Request, res: Response, next: 
     await assignCaretaker(catId, targetId, req.user!.id);
     addFlash(req, "success", "Caretaker assigned.");
     res.redirect(`/cats/${req.params.id}`);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/:id/delete", adminOnly, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const catId = Number(req.params.id);
+    if (Number.isNaN(catId)) {
+      addFlash(req, "error", "Invalid cat id.");
+      return res.redirect("/cats");
+    }
+
+    const ok = await deleteCat(catId, req.user!.id);
+    if (!ok) {
+      addFlash(req, "error", "Cat not found.");
+      return res.redirect("/cats");
+    }
+
+    addFlash(req, "success", "Cat deleted.");
+    res.redirect("/cats");
   } catch (error) {
     next(error);
   }

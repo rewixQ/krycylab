@@ -1,5 +1,7 @@
 import { prisma } from "../lib/prisma";
 import { logAudit } from "./auditService";
+import fs from "fs/promises";
+import path from "path";
 
 type CatListItem = {
 	id: number;
@@ -178,5 +180,55 @@ export const assignCaretaker = async (
 		event_type: "cats.assign",
 		extra: { catId, userId }
 	});
+};
+
+export const deleteCat = async (id: number, actorId: number): Promise<boolean> => {
+	// Fetch to obtain filename and confirm existence
+	const existing = await (prisma as any).cats.findUnique({
+		where: { cat_id: id },
+		select: {
+			cat_id: true,
+			name: true,
+			breed: true,
+			description: true,
+			birth_date: true,
+			filename: true
+		}
+	});
+
+	if (!existing) return false;
+
+	// Best-effort remove associated file from disk
+	if (existing.filename) {
+		try {
+			const normalized = existing.filename.split("/"); // stored as posix
+			const absolutePath = path.join(process.cwd(), "public", ...normalized);
+			await fs.unlink(absolutePath);
+		} catch {
+			// ignore file deletion errors
+		}
+	}
+
+	// Delete the cat (caretakerassignments cascade via FK)
+	await (prisma as any).cats.delete({
+		where: { cat_id: id }
+	});
+
+	// Audit
+	await logAudit({
+		user_id: actorId,
+		operation: "DELETE",
+		table_name: "Cats",
+		record_id: id,
+		event_type: "cats.delete",
+		changes: {
+			name: existing.name,
+			breed: existing.breed ?? null,
+			description: existing.description ?? null,
+			birth_date: existing.birth_date ?? null
+		}
+	});
+
+	return true;
 };
 

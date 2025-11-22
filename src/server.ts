@@ -30,7 +30,8 @@ if (env.trustProxy) {
 }
 
 const sessionMiddleware = session({
-  store: isDev ? undefined : new FileStore({
+  // Use a persistent file store in all environments to avoid losing sessions on restart
+  store: new FileStore({
     path: path.join(process.cwd(), ".sessions"),
     ttl: 60 * 60 * 24 * 7
   }),

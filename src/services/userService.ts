@@ -38,6 +38,19 @@ export const createUser = async (
     throw new Error(strengthError);
   }
 
+  // Enforce single active admin at application level
+  const role = await (prisma as any).roles.findUnique({
+    where: { role_id: data.roleId }
+  });
+  if (role?.role_name === "admin") {
+    const activeAdmins = await (prisma as any).users.count({
+      where: { is_active: true, roles: { role_name: "admin" } }
+    });
+    if (activeAdmins > 0) {
+      throw new Error("Only one active admin is allowed.");
+    }
+  }
+
   const passwordHash = await bcrypt.hash(data.password, 12);
   const user = await (prisma as any).users.create({
     data: {
@@ -65,6 +78,24 @@ export const updateUserRole = async (
   actor: { id: number; roleName: RoleName }
 ) => {
   await ensureRoleChangeAllowed(actor.roleName, targetId);
+
+  // Enforce single active admin when changing role
+  const desiredRole = await (prisma as any).roles.findUnique({
+    where: { role_id: roleId }
+  });
+  if (desiredRole?.role_name === "admin") {
+    const activeAdmins = await (prisma as any).users.count({
+      where: {
+        is_active: true,
+        roles: { role_name: "admin" },
+        NOT: { user_id: targetId }
+      }
+    });
+    if (activeAdmins > 0) {
+      throw new Error("Only one active admin is allowed.");
+    }
+  }
+
   const updated = await (prisma as any).users.update({
     where: { user_id: targetId },
     data: { role_id: roleId }
@@ -88,6 +119,27 @@ export const setUserActiveState = async (
   actor: { id: number; roleName: RoleName }
 ) => {
   await ensureRoleChangeAllowed(actor.roleName, targetId);
+
+  // If activating an admin, ensure no other active admin exists
+  if (active) {
+    const target = await (prisma as any).users.findUnique({
+      where: { user_id: targetId },
+      include: { roles: true }
+    });
+    if (target?.roles?.role_name === "admin") {
+      const activeAdmins = await (prisma as any).users.count({
+        where: {
+          is_active: true,
+          roles: { role_name: "admin" },
+          NOT: { user_id: targetId }
+        }
+      });
+      if (activeAdmins > 0) {
+        throw new Error("Only one active admin is allowed.");
+      }
+    }
+  }
+
   const updated = await (prisma as any).users.update({
     where: { user_id: targetId },
     data: { is_active: active }

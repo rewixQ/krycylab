@@ -7,7 +7,14 @@
       <h1 class="text-3xl font-semibold">{{ cat.name }}</h1>
     </div>
     {% if currentUser.roleName in ["admin", "superadmin"] %}
-      <a href="/cats/{{ cat.id }}/edit" class="rounded border border-slate-700 px-3 py-2 text-sm">Edit</a>
+      <div class="flex items-center gap-2">
+        <a href="/cats/{{ cat.id }}/edit" class="rounded border border-slate-700 px-3 py-2 text-sm">Edit</a>
+        <form method="post" action="/cats/{{ cat.id }}/delete" onsubmit="return confirm('Delete this cat? This cannot be undone.');">
+          <button class="rounded border border-red-800 text-red-300 hover:bg-red-900/30 px-3 py-2 text-sm">
+            Delete
+          </button>
+        </form>
+      </div>
     {% endif %}
   </div>
 

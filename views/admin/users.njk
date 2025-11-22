@@ -22,7 +22,7 @@
           <span>Role</span>
           <select name="roleId" class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2">
             {% for role in roles %}
-              <option value="{{ role.roleId }}">{{ role.roleName }}</option>
+              <option value="{{ role.role_id }}">{{ role.role_name }}</option>
             {% endfor %}
           </select>
         </label>
@@ -53,11 +53,11 @@
               <td class="px-3 py-2">{{ user.username }}</td>
               <td class="px-3 py-2 text-slate-400">{{ user.email }}</td>
               <td class="px-3 py-2">
-                <form method="post" action="/admin/users/{{ user.id }}/role">
+                <form method="post" action="/admin/users/{{ user.user_id }}/role">
                   <select name="roleId" class="rounded border border-slate-800 bg-slate-950 px-2 py-1 text-xs">
                     {% for role in roles %}
-                      <option value="{{ role.roleId }}" {% if role.roleId == user.roleId %}selected{% endif %}>
-                        {{ role.roleName }}
+                      <option value="{{ role.role_id }}" {% if role.role_id == user.role_id %}selected{% endif %}>
+                        {{ role.role_name }}
                       </option>
                     {% endfor %}
                   </select>
@@ -65,8 +65,8 @@
                 </form>
               </td>
               <td class="px-3 py-2">
-                <form method="post" action="/admin/users/{{ user.id }}/state">
-                  {% if user.isActive %}
+                <form method="post" action="/admin/users/{{ user.user_id }}/state">
+                  {% if user.is_active %}
                     <button name="state" value="deactivate" class="text-red-300">Deactivate</button>
                   {% else %}
                     <button name="state" value="activate" class="text-emerald-300">Activate</button>
@@ -74,7 +74,7 @@
                 </form>
               </td>
               <td class="px-3 py-2 text-right text-xs text-slate-500">
-                Created {{ user.createdAt | date("YYYY-MM-DD") }}
+                Created {{ user.created_at | date("YYYY-MM-DD") }}
               </td>
             </tr>
           {% else %}
