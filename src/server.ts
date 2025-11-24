@@ -72,7 +72,7 @@ app.use(
   })
 );
 
-app.use(enforceHttps);
+// app.use(enforceHttps);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(requestLogger);
