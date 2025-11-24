@@ -103,10 +103,13 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 const port = env.port;
+const host = env.host;
 
 if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`🚀 Server listening on http://localhost:${port}`);
+  app.listen(port, host, () => {
+    const displayHost = host === "0.0.0.0" ? "0.0.0.0 (all interfaces)" : host;
+    console.log(`🚀 Server listening on http://${displayHost}:${port}`);
+    console.log(`ℹ️  Tip: from this machine use http://localhost:${port}`);
   });
 }
 

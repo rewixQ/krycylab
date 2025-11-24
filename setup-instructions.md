@@ -73,6 +73,24 @@ Configure Tailwind in your template files:
 - Log all authentication, authorization, and error events to audit logs per schema.
 - Use a reverse proxy (e.g., Nginx with appropriate modules or a node package) to filter and block suspicious requests (DOS, Path Traversal, etc.).
 
+### HTTPS enforcement in development/testing
+
+- The app can enforce HTTPS redirects via the `ENFORCE_HTTPS` environment variable.
+- Defaults: enabled in production, disabled otherwise.
+- For local/LAN testing without TLS, set in your `.env`:
+
+```bash
+ENFORCE_HTTPS=false
+```
+
+- If terminating TLS at a reverse proxy, also set:
+
+```bash
+TRUST_PROXY=true
+```
+
+so the app respects `x-forwarded-proto` and avoids redirect loops.
+
 ---
 
 ## 6. Authentication & MFA

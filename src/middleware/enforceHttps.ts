@@ -1,12 +1,12 @@
 import { NextFunction, Request, Response } from "express";
-import { isProd } from "../config/env";
+import { enforceHttpsFlag } from "../config/env";
 
 export const enforceHttps = (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  if (!isProd) return next();
+  if (!enforceHttpsFlag) return next();
   const forwardedProto = req.headers["x-forwarded-proto"];
   if (req.secure || forwardedProto === "https") {
     return next();

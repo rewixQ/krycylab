@@ -43,7 +43,7 @@ export const logAudit = async ({
   };
 
   await prisma.auditlogs.create({
-    data: auditData
+    data: auditData as any
   });
 };
 

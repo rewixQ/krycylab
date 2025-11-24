@@ -5,9 +5,13 @@
   "main": "dist/src/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:lan": "APP_HOST=0.0.0.0 tsx watch src/server.ts",
+    "dev:lan:ps": "powershell -NoProfile -Command \"$env:APP_HOST='0.0.0.0'; tsx watch src/server.ts\"",
     "dev:full": "concurrently \"pnpm dev\" \"pnpm tailwind\"",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/server.js",
+    "start:lan": "APP_HOST=0.0.0.0 node dist/src/server.js",
+    "start:lan:ps": "powershell -NoProfile -Command \"$env:APP_HOST='0.0.0.0'; node dist/src/server.js\"",
     "lint": "tsc --noEmit",
     "postinstall": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

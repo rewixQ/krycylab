@@ -26,6 +26,7 @@ if (missing.length) {
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: num(process.env.APP_PORT, 3000),
+  host: process.env.APP_HOST ?? "0.0.0.0",
   sessionSecret: process.env.SESSION_SECRET ?? "dev-secret-change-me",
   trustProxy: bool(process.env.TRUST_PROXY),
   databaseUrl: process.env.DATABASE_URL ?? "file:./dev.db",
@@ -34,4 +35,7 @@ export const env = {
 
 export const isProd = env.nodeEnv === "production";
 export const isDev = !isProd;
+
+// HTTPS enforcement flag: default to true in production, false otherwise
+export const enforceHttpsFlag = bool(process.env.ENFORCE_HTTPS, isProd);
 
