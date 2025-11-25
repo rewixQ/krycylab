@@ -59,7 +59,14 @@ nunjucksEnv.addFilter("date", (value: Date | string, format = "YYYY-MM-DD") =>
 app.set("view engine", "njk");
 app.set("views", viewsPath);
 
-app.use(helmet());
+app.use(
+  helmet({
+    // Disable headers that cause issues over HTTP (non-HTTPS)
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
+    originAgentCluster: false
+  })
+);
 app.use(cookieParser());
 
 // Static files must come before HTTPS enforcement
