@@ -14,7 +14,7 @@ import {
 } from "../services/catService";
 import { addFlash } from "../lib/flash";
 import { prisma } from "../lib/prisma";
-import { parseCatPayload } from "../validators/cat";
+import { validateCatPayload, CatValidationErrors } from "../validators/cat";
 
 const router = Router();
 
@@ -61,7 +61,16 @@ router.get("/new", adminOnly, (_req: Request, res: Response) => {
 
 router.post("/", adminOnly, upload.single("photo"), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const payload = parseCatPayload(req.body);
+    const validation = validateCatPayload(req.body);
+    if (!validation.success) {
+      return res.render("cats/form", {
+        title: "Add Cat",
+        cat: null,
+        formData: req.body,
+        errors: validation.errors
+      });
+    }
+    const payload = validation.data;
     const photoPath = req.file ? path.posix.join("uploads", "cats", req.file.filename) : null;
     await createCat(
       {
@@ -134,7 +143,17 @@ router.post("/:id", adminOnly, upload.single("photo"), async (req: Request, res:
       addFlash(req, "error", "Invalid cat id.");
       return res.redirect("/cats");
     }
-    const payload = parseCatPayload(req.body);
+    const validation = validateCatPayload(req.body);
+    if (!validation.success) {
+      const existingCat = await getCat(catId);
+      return res.render("cats/form", {
+        title: existingCat ? `Edit ${existingCat.name}` : "Edit Cat",
+        cat: existingCat ? { ...existingCat, id: catId } : { id: catId },
+        formData: req.body,
+        errors: validation.errors
+      });
+    }
+    const payload = validation.data;
     const photoPath = req.file ? path.posix.join("uploads", "cats", req.file.filename) : undefined;
     await updateCat(
       catId,

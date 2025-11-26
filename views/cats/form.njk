@@ -3,22 +3,66 @@
 {% block content %}
   <div class="max-w-2xl mx-auto rounded border border-slate-800 bg-slate-900/70 p-6">
     <h1 class="text-2xl font-semibold mb-4">{% if cat %}Edit{% else %}Create{% endif %} Cat</h1>
+
+    {% if errors %}
+      <div class="mb-4 rounded border border-red-800 bg-red-950/50 p-4">
+        <p class="text-sm font-medium text-red-400">Please fix the following errors:</p>
+        <ul class="mt-2 list-disc list-inside text-sm text-red-300">
+          {% for field, message in errors %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
     <form method="post" action="/cats{% if cat %}/{{ cat.id }}{% endif %}" enctype="multipart/form-data" class="space-y-4">
       <label class="block text-sm">
-        <span>Name</span>
-        <input type="text" name="name" value="{{ cat.name if cat else '' }}" required class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2" />
+        <span>Name <span class="text-red-400">*</span></span>
+        <input
+          type="text"
+          name="name"
+          value="{{ formData.name if formData else (cat.name if cat else '') }}"
+          class="mt-1 w-full rounded border px-3 py-2 bg-slate-950 {{ 'border-red-500' if errors.name else 'border-slate-800' }}"
+        />
+        {% if errors.name %}
+          <p class="mt-1 text-xs text-red-400">{{ errors.name }}</p>
+        {% endif %}
       </label>
       <label class="block text-sm">
         <span>Breed</span>
-        <input type="text" name="breed" value="{{ cat.breed if cat else '' }}" class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2" />
+        <input
+          type="text"
+          name="breed"
+          value="{{ formData.breed if formData else (cat.breed if cat else '') }}"
+          class="mt-1 w-full rounded border px-3 py-2 bg-slate-950 {{ 'border-red-500' if errors.breed else 'border-slate-800' }}"
+        />
+        {% if errors.breed %}
+          <p class="mt-1 text-xs text-red-400">{{ errors.breed }}</p>
+        {% endif %}
       </label>
       <label class="block text-sm">
-        <span>Birth Date</span>
-        <input type="date" name="birthDate" value="{{ cat.birthDate | date('YYYY-MM-DD') if cat and cat.birthDate else '' }}" class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2" />
+        <span>Birth Date <span class="text-red-400">*</span></span>
+        <input
+          type="date"
+          name="birthDate"
+          value="{{ formData.birthDate if formData else (cat.birthDate | date('YYYY-MM-DD') if cat and cat.birthDate else '') }}"
+          class="mt-1 w-full rounded border px-3 py-2 bg-slate-950 {{ 'border-red-500' if errors.birthDate else 'border-slate-800' }}"
+        />
+        {% if errors.birthDate %}
+          <p class="mt-1 text-xs text-red-400">{{ errors.birthDate }}</p>
+        {% endif %}
       </label>
       <label class="block text-sm">
         <span>Friends</span>
-        <input type="text" name="friends" value="{{ cat.friends if cat else '' }}" class="mt-1 w-full rounded border border-slate-800 bg-slate-950 px-3 py-2" />
+        <input
+          type="text"
+          name="friends"
+          value="{{ formData.friends if formData else (cat.friends if cat else '') }}"
+          class="mt-1 w-full rounded border px-3 py-2 bg-slate-950 {{ 'border-red-500' if errors.friends else 'border-slate-800' }}"
+        />
+        {% if errors.friends %}
+          <p class="mt-1 text-xs text-red-400">{{ errors.friends }}</p>
+        {% endif %}
       </label>
       <label class="block text-sm">
         <span>Photo</span>
@@ -28,7 +72,7 @@
           <img src="/{{ cat.photoPath }}" alt="Photo of {{ cat.name }}" class="mt-1 h-32 w-32 rounded object-cover border border-slate-800" />
         {% endif %}
       </label>
-      <button class="rounded bg-emerald-500 px-4 py-2 font-semibold text-slate-900">
+      <button class="rounded bg-emerald-500 px-4 py-2 font-semibold text-slate-900 hover:bg-emerald-400 transition-colors">
         Save
       </button>
     </form>
